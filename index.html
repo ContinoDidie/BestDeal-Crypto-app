@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BestDeal Crypto - Real-time Comparator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            black: '#08090c',
+                            card: '#10131b',
+                            border: '#1f2638',
+                            neonGreen: '#00ff66',
+                            neonCyan: '#00f0ff',
+                            neonPink: '#ff0055',
+                            muted: '#64748b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #08090c;
+            color: #f1f5f9;
+        }
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+        .glow-green {
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.15);
+        }
+        .border-glow:focus-within {
+            border-color: #00f0ff;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+        /* Custom scrollbar for log terminal */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #08090c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2638;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+    </style>
+</head>
+<body class="font-sans min-h-screen flex flex-col justify-between selection:bg-cyber-neonCyan selection:text-black">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-cyber-border bg-cyber-card/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyber-neonCyan to-cyber-neonGreen p-[2px]">
+                    <div class="w-full h-full bg-cyber-black rounded-[10px] flex items-center justify-center">
+                        <span class="text-cyber-neonCyan font-bold text-xl">⚡</span>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-lg font-extrabold tracking-wider bg-gradient-to-r from-cyber-neonCyan via-white to-cyber-neonGreen bg-clip-text text-transparent">
+                        BESTDEAL<span class="text-cyber-neonGreen">CRYPTO</span>
+                    </h1>
+                    <p class="text-[10px] text-cyber-muted font-mono tracking-tight">REAL-TIME COMPARATOR ENGINE</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-cyber-neonGreen/10 text-cyber-neonGreen border border-cyber-neonGreen/30 animate-pulse">
+                    <span class="w-2 h-2 rounded-full bg-cyber-neonGreen mr-2"></span> SCRAPER ACTIVE
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+        
+        <!-- Search & Category Filters Header -->
+        <section class="space-y-6">
+            <div class="text-center max-w-3xl mx-auto space-y-2">
+                <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                    Compare Prices Across <span class="text-cyber-neonCyan">DEXs</span> & <span class="text-cyber-neonGreen">Tech Merchants</span>
+                </h2>
+                <p class="text-cyber-muted text-sm sm:text-base">
+                    Real-time aggregated scraping engine comparing crypto rates, GPUs, & Web3 hardware deals.
+                </p>
+            </div>
+
+            <!-- Search Bar with Live Autocomplete -->
+            <div class="max-w-2xl mx-auto relative border-glow rounded-2xl bg-cyber-card border border-cyber-border transition-all">
+                <div class="flex items-center px-4 py-3">
+                    <svg class="w-6 h-6 text-cyber-muted mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Search token (e.g. BTC, ETH, SOL) or tech item (e.g. RTX 4090, Ledger)..." 
+                        class="w-full bg-transparent text-white focus:outline-none text-sm sm:text-base placeholder-cyber-muted font-medium"
+                        autocomplete="off">
+                    <button id="clearSearch" class="hidden text-cyber-muted hover:text-white text-sm font-bold px-2">✕</button>
+                </div>
+
+                <!-- Autocomplete Dropdown -->
+                <div id="autocompleteList" class="hidden absolute top-full left-0 right-0 mt-2 bg-cyber-card border border-cyber-border rounded-xl shadow-2xl z-40 overflow-hidden divide-y divide-cyber-border">
+                </div>
+            </div>
+
+            <!-- Category Filter Tabs -->
+            <div class="flex items-center justify-center gap-2 flex-wrap text-sm font-semibold">
+                <button onclick="setCategory('all')" id="cat-all" class="cat-btn px-5 py-2.5 rounded-xl bg-cyber-neonCyan/10 text-cyber-neonCyan border border-cyber-neonCyan/40 transition">
+                    🌐 All Deals
+                </button>
+                <button onclick="setCategory('crypto')" id="cat-crypto" class="cat-btn px-5 py-2.5 rounded-xl bg-cyber-card text-cyber-muted border border-cyber-border hover:border-cyber-muted transition">
+                    💎 Crypto Best Deals
+                </button>
+                <button onclick="setCategory('hardware')" id="cat-hardware" class="cat-btn px-5 py-2.5 rounded-xl bg-cyber-card text-cyber-muted border border-cyber-border hover:border-cyber-muted transition">
+                    ⚡ Hardware / Rig Tech
+                </button>
+            </div>
+        </section>
+
+        <!-- Sorting & Results Summary Bar -->
+        <section class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-cyber-card/50 p-4 rounded-xl border border-cyber-border text-xs sm:text-sm">
+            <div class="text-cyber-muted">
+                Showing deals for: <span id="activeSearchTitle" class="text-white font-bold">Bitcoin (BTC)</span>
+            </div>
+            
+            <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
+                <span class="text-cyber-muted font-medium">Sort By:</span>
+                <select id="sortSelect" onchange="renderResults()" class="bg-cyber-black text-white border border-cyber-border rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyber-neonCyan text-xs sm:text-sm font-mono">
+                    <option value="cheapest">Cheapest First</option>
+                    <option value="fastest">Fastest Settlement / Delivery</option>
+                    <option value="rating">Highest Merchant Rating</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Results Grid -->
+        <section id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Dynamic comparison cards injected here -->
+        </section>
+
+    </main>
+
+    <!-- Real-time WebScraper Terminal Console -->
+    <footer class="bg-cyber-black border-t border-cyber-border font-mono text-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-cyber-neonGreen animate-ping"></span>
+                    <span class="text-cyber-neonGreen font-bold tracking-wider text-[11px]">SCRAPER_ENGINE_V2 // LIVE LOGS</span>
+                </div>
+                <button onclick="toggleTerminal()" class="text-cyber-muted hover:text-white text-[11px] underline">
+                    Toggle Terminal
+                </button>
+            </div>
+
+            <div id="terminalConsole" class="h-28 overflow-y-auto bg-cyber-card p-3 rounded-lg border border-cyber-border/60 text-slate-300 space-y-1">
+                <div class="text-cyber-muted">[00:00:00] Engine initialized. Listening to real-time merchant endpoints...</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Application Script -->
+    <script>
+        // Mock dataset containing crypto and hardware products
+        const dataset = [
+            {
+                id: 'btc',
+                name: 'Bitcoin (BTC)',
+                category: 'crypto',
+                type: 'Token / Spot',
+                deals: [
+                    { vendor: 'Binance DEX', price: 67420.50, speed: '2 mins', rating: 4.9, link: '#', status: 'In Stock / High Liquidity' },
+                    { vendor: 'Uniswap v3', price: 67110.00, speed: ' Instant', rating: 4.8, link: '#', status: 'Optimal Route' },
+                    { vendor: 'Kraken Pro', price: 67650.00, speed: '1 min', rating: 4.7, link: '#', status: 'High Liquidity' },
+                    { vendor: 'BestDeal Swap (CTO Pool)', price: 66980.25, speed: '< 10s', rating: 5.0, link: '#', status: 'Lowest Fee Guarantee' }
+                ]
+            },
+            {
+                id: 'eth',
+                name: 'Ethereum (ETH)',
+                category: 'crypto',
+                type: 'Token / Spot',
+                deals: [
+                    { vendor: '1inch Aggregator', price: 3450.10, speed: ' Instant', rating: 4.9, link: '#', status: 'Best Route' },
+                    { vendor: 'Sushiswap', price: 3482.00, speed: 'Instant', rating: 4.6, link: '#', status: 'Medium Liquidity' },
+                    { vendor: 'Coinbase Exchange', price: 3490.50, speed: '3 mins', rating: 4.8, link: '#', status: 'High Liquidity' }
+                ]
+            },
+            {
+                id: 'sol',
+                name: 'Solana (SOL)',
+                category: 'crypto',
+                type: 'Token / Spot',
+                deals: [
+                    { vendor: 'Jupiter DEX', price: 178.40, speed: '< 1s', rating: 4.95, link: '#', status: 'Top Aggregator' },
+                    { vendor: 'Raydium', price: 179.80, speed: '2s', rating: 4.7, link: '#', status: 'High Volume' },
+                    { vendor: 'Bybit', price: 181.20, speed: '1 min', rating: 4.6, link: '#', status: 'In Stock' }
+                ]
+            },
+            {
+                id: 'rtx4090',
+                name: 'NVIDIA RTX 4090 Mining Rig GPU',
+                category: 'hardware',
+                type: 'Hardware / Rig',
+                deals: [
+                    { vendor: 'Newegg Tech', price: 1799.99, speed: '2 Days Delivery', rating: 4.8, link: '#', status: 'Limited Stock' },
+                    { vendor: 'CryptoRig Direct', price: 1699.00, speed: '1 Day Delivery', rating: 4.9, link: '#', status: 'In Stock' },
+                    { vendor: 'Amazon Global', price: 1849.50, speed: '3 Days Delivery', rating: 4.5, link: '#', status: 'In Stock' }
+                ]
+            },
+            {
+                id: 'ledger',
+                name: 'Ledger Stax Hardware Wallet',
+                category: 'hardware',
+                type: 'Security / Storage',
+                deals: [
+                    { vendor: 'Official Ledger Store', price: 399.00, speed: 'Express Ship', rating: 5.0, link: '#', status: 'Verified Merchant' },
+                    { vendor: 'BestDeal Crypto Store', price: 369.00, speed: 'Same Day Ship', rating: 4.9, link: '#', status: 'Discount Code Applied' }
+                ]
+            }
+        ];
+
+        let currentCategory = 'all';
+        let currentItem = dataset[0]; // Default to BTC
+        let currentSort = 'cheapest';
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            renderResults();
+            initScraperTerminal();
+            setupSearch();
+        });
+
+        // Set Category
+        function setCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = 'cat-btn px-5 py-2.5 rounded-xl bg-cyber-card text-cyber-muted border border-cyber-border hover:border-cyber-muted transition';
+            });
+            const activeBtn = document.getElementById(`cat-${cat}`);
+            if (activeBtn) {
+                activeBtn.className = 'cat-btn px-5 py-2.5 rounded-xl bg-cyber-neonCyan/10 text-cyber-neonCyan border border-cyber-neonCyan/40 transition';
+            }
+            renderResults();
+        }
+
+        // Render Results Cards
+        function renderResults() {
+            const grid = document.getElementById('resultsGrid');
+            const sortVal = document.getElementById('sortSelect').value;
+            document.getElementById('activeSearchTitle').innerText = currentItem.name;
+
+            // Filter deals based on category
+            if (currentCategory !== 'all' && currentItem.category !== currentCategory) {
+                // Find first item matching category
+                const match = dataset.find(d => d.category === currentCategory);
+                if (match) currentItem = match;
+            }
+
+            // Copy and Sort deals
+            let deals = [...currentItem.deals];
+            if (sortVal === 'cheapest') {
+                deals.sort((a, b) => a.price - b.price);
+            } else if (sortVal === 'rating') {
+                deals.sort((a, b) => b.rating - a.rating);
+            } else if (sortVal === 'fastest') {
+                deals.sort((a, b) => a.speed.localeCompare(b.speed));
+            }
+
+            const minPrice = Math.min(...deals.map(d => d.price));
+
+            grid.innerHTML = deals.map((deal, idx) => {
+                const isBest = deal.price === minPrice;
+                const priceDiffPct = (((deal.price - minPrice) / minPrice) * 100).toFixed(1);
+
+                return `
+                    <div class="bg-cyber-card rounded-2xl border ${isBest ? 'border-cyber-neonGreen glow-green' : 'border-cyber-border'} p-6 flex flex-col justify-between relative transition hover:border-cyber-neonCyan">
+                        ${isBest ? `
+                            <span class="absolute -top-3 right-4 bg-cyber-neonGreen text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                                🔥 Lowest Price Deal
+                            </span>
+                        ` : ''}
+
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="font-bold text-white text-base">${deal.vendor}</h3>
+                                    <p class="text-xs text-cyber-muted font-mono">${currentItem.type}</p>
+                                </div>
+                                <span class="text-xs font-mono px-2 py-1 bg-cyber-black rounded-md border border-cyber-border text-yellow-400">
+                                    ★ ${deal.rating}
+                                </span>
+                            </div>
+
+                            <div class="my-4 p-4 bg-cyber-black/60 rounded-xl border border-cyber-border/40">
+                                <div class="text-2xl font-black font-mono text-white">
+                                    $${deal.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                                <div class="flex items-center justify-between text-xs mt-2 font-mono">
+                                    <span class="${isBest ? 'text-cyber-neonGreen' : 'text-cyber-neonPink'}">
+                                        ${isBest ? 'BEST OFFER' : `+${priceDiffPct}% higher`}
+                                    </span>
+                                    <span class="text-cyber-muted">${deal.speed}</span>
+                                </div>
+                            </div>
+
+                            <div class="text-xs text-cyber-muted space-y-1 mb-6 font-mono">
+                                <div class="flex items-center">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-cyber-neonCyan mr-2"></span>
+                                    Status: <span class="text-slate-300 ml-1">${deal.status}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a href="${deal.link}" target="_blank" 
+                           class="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider text-center transition flex items-center justify-center ${isBest ? 'bg-cyber-neonGreen text-black hover:bg-emerald-400' : 'bg-cyber-border text-white hover:bg-slate-700'}">
+                           Go to Deal
+                           <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </a>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Search & Autocomplete
+        function setupSearch() {
+            const input = document.getElementById('searchInput');
+            const list = document.getElementById('autocompleteList');
+            const clearBtn = document.getElementById('clearSearch');
+
+            input.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase().trim();
+                if (!val) {
+                    list.classList.add('hidden');
+                    clearBtn.classList.add('hidden');
+                    return;
+                }
+
+                clearBtn.classList.remove('hidden');
+                const matches = dataset.filter(item => 
+                    item.name.toLowerCase().includes(val) || item.id.toLowerCase().includes(val)
+                );
+
+                if (matches.length > 0) {
+                    list.innerHTML = matches.map(item => `
+                        <div onclick="selectItem('${item.id}')" class="p-3 hover:bg-cyber-border/60 cursor-pointer flex items-center justify-between text-xs sm:text-sm">
+                            <span class="font-semibold text-white">${item.name}</span>
+                            <span class="text-xs font-mono text-cyber-neonCyan uppercase px-2 py-0.5 bg-cyber-black rounded border border-cyber-border">${item.category}</span>
+                        </div>
+                    `).join('');
+                    list.classList.remove('hidden');
+                } else {
+                    list.classList.add('hidden');
+                }
+            });
+
+            clearBtn.addEventListener('click', () => {
+                input.value = '';
+                list.classList.add('hidden');
+                clearBtn.classList.add('hidden');
+            });
+        }
+
+        function selectItem(id) {
+            const item = dataset.find(d => d.id === id);
+            if (item) {
+                currentItem = item;
+                document.getElementById('searchInput').value = item.name;
+                document.getElementById('autocompleteList').classList.add('hidden');
+                renderResults();
+            }
+        }
+
+        // Simulated Live WebScraper Log Terminal
+        function initScraperTerminal() {
+            const terminal = document.getElementById('terminalConsole');
+            const endpoints = [
+                'https://api.binance.com/api/v3/ticker/bookTicker',
+                'https://api.uniswap.org/v2/quotes',
+                'https://newegg-api.internal/products/gpu/scrape',
+                'https://api.jupiter.ag/v6/quote',
+                'https://ledger-store-node.internal/inventory'
+            ];
+
+            setInterval(() => {
+                const now = new Date().toLocaleTimeString();
+                const ep = endpoints[Math.floor(Math.random() * endpoints.length)];
+                const latency = Math.floor(Math.random() * 80) + 20;
+
+                const log = document.createElement('div');
+                log.className = 'text-[11px] font-mono leading-tight';
+                log.innerHTML = `<span class="text-cyber-muted">[${now}]</span> <span class="text-cyber-neonCyan">FETCH</span> ${ep} <span class="text-cyber-neonGreen">HTTP 200 OK</span> (${latency}ms)`;
+
+                terminal.appendChild(log);
+                terminal.scrollTop = terminal.scrollHeight;
+
+                // Keep terminal clean
+                if (terminal.children.length > 30) {
+                    terminal.removeChild(terminal.firstChild);
+                }
+            }, 2500);
+        }
+
+        function toggleTerminal() {
+            const consoleEl = document.getElementById('terminalConsole');
+            consoleEl.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>
